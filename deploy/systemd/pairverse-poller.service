@@ -1,0 +1,24 @@
+[Unit]
+Description=Pairverse 24/7 new-pair poller
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pairverse
+Group=pairverse
+WorkingDirectory=/opt/pairverse
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=/opt/pairverse
+Environment=PAIRS_DB=/var/lib/pairverse/pairs.db
+Environment=PAIRS_CACHE=/var/lib/pairverse/cache
+ExecStart=/opt/pairverse/.venv/bin/python /opt/pairverse/poller.py
+Restart=always
+RestartSec=5
+LimitNOFILE=65535
+
+# Let SQLite finish a WAL write on stop
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pairs — the Solana liquidity universe</title>
+<meta name="description" content="Every Solana trading pair as one sky. Search any token and see every pool it trades in, live.">
+<meta name="theme-color" content="#030304">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..700&family=Geist+Mono:wght@300..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/site.css">
+<script type="importmap">{"imports":{"three":"/vendor/three-build/three.module.js","three/addons/":"/vendor/jsm/"}}</script>
+</head><body>
+<canvas id="gl" aria-hidden="true"></canvas>
+<canvas id="fallback" aria-hidden="true"></canvas>
+<div class="ui" id="ui">
+  <header class="top" id="top">
+    <a class="brand" href="/" id="home" data-mag><i></i>PAIRS</a>
+    <nav><a href="/" id="navU" class="on" data-mag>Universe</a><a href="#new" id="navN" data-mag>New today</a><a href="/classic" data-mag>Classic</a></nav>
+    <div class="r"><span><b id="cnt">—</b> pools mapped</span><span class="hide-m"><b id="rate">—</b> new / min</span>
+      <button class="snd" id="snd" type="button" aria-pressed="false" data-mag><span><i></i><i></i><i></i><i></i></span><em>Sound off</em></button></div>
+  </header>
+  <div class="title" id="title" aria-label="Every pair on Solana, one sky."><span class="ln">Every pair</span><span class="ln">on Solana, <em>one sky.</em></span></div>
+  <div class="kicker" id="kicker"></div>
+  <div class="ov" id="ov"><div class="big"><span id="ovn">0</span> <em>pools</em></div><p id="ovp">Brightness = liquidity · color = DEX · knots = tokens</p></div>
+  <div class="legend" id="legend"><div>Raydium<i style="background:#8FD3FF"></i></div><div>Orca<i style="background:#FFC562"></i></div><div>Meteora<i style="background:#FF7A52"></i></div><div>Pump.fun / PumpSwap<i style="background:#8CFFC1"></i></div><div>Other<i style="background:#E9E4DA"></i></div><p>drag to orbit · scroll to dive</p></div>
+
+  <section class="tok" id="tok" aria-live="polite">
+    <button class="back" id="back" type="button" data-mag>← Universe</button>
+    <h1 class="sym" id="tSym"></h1>
+    <div class="nm" id="tName"></div>
+    <div class="px" id="tPx"></div>
+    <div class="meta"><small>Pools</small><small>Liquidity</small><small>Vol 24h</small><b id="m1">—</b><b id="m2">—</b><b id="m3">—</b></div>
+    <div class="mint"><button type="button" id="tMint" title="Copy mint" data-mag></button><span id="tFirst"></span></div>
+    <div class="enr" id="tEnr"></div>
+  </section>
+  <aside class="list" id="list"><h4><span id="lTitle">Deepest pairs</span><span id="lSub"></span></h4><div id="rows"></div><button type="button" class="more" id="more" data-mag></button></aside>
+  <button type="button" class="pill" id="pill" data-mag></button>
+
+  <div id="labs"></div>
+  <div class="nova" id="nova"><span class="tag">NEW PAIR</span><div id="novaName"></div><small id="novaMeta"></small></div>
+  <div class="feed" id="feed" aria-live="polite"></div>
+
+  <form class="search" id="search" role="search" autocomplete="off">
+    <div class="sugg" id="sugg" role="listbox"></div>
+    <label class="field" data-mag>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="text" spellcheck="false" placeholder="Search any token or paste a mint" aria-label="Search token symbol or mint" maxlength="64">
+      <kbd id="kbd">/</kbd>
+    </label>
+  </form>
+
+  <div class="drawer" id="drawer" role="dialog" aria-modal="false" aria-labelledby="dTitle">
+    <div class="dh"><div><h3 id="dTitle"></h3><p id="dSub"></p></div><button type="button" id="dClose" aria-label="Close" data-mag>✕</button></div>
+    <div class="dt"><table><thead><tr>
+      <th data-k="pair">Pair</th><th data-k="dex">DEX</th><th data-k="quote">Quote</th><th data-k="liq" class="n">Liquidity</th><th data-k="vol" class="n">Vol 24h</th><th data-k="age" class="n">Age</th><th class="n">Open</th>
+    </tr></thead><tbody id="dRows"></tbody></table></div>
+    <p class="dn" id="dNote"></p>
+  </div>
+  <div class="loader" id="loader"><span id="ldTxt">tuning the sky</span><i><b id="ldBar"></b></i></div>
+  <div class="toast" id="toast"></div>
+</div>
+<div class="cursor" id="cur"></div>
+<noscript><p style="padding:40px;color:#ccc;font-family:sans-serif">This view needs JavaScript. Use the <a href="/classic" style="color:#FFB75E">classic lookup</a>.</p></noscript>
+<script type="module" src="/app.js"></script>
+</body></html>

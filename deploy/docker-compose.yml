@@ -1,0 +1,53 @@
+# Production compose: Caddy (80/443 + auto HTTPS) + app (API + poller).
+# Run on the VPS only. Do not publish these ports on a shared/dev machine.
+#
+#   export CADDY_EMAIL=you@example.com
+#   docker compose -f deploy/docker-compose.yml up -d
+#
+# Data: /var/lib/pairverse on the host (pairs.db, WAL, cache).
+
+name: pairverse
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: pairverse:latest
+    restart: unless-stopped
+    environment:
+      PAIRS_DB: /data/pairs.db
+      PAIRS_CACHE: /data/cache
+    volumes:
+      - /var/lib/pairverse:/data
+    expose:
+      - "8765"
+    mem_limit: 1536m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/health', timeout=4).read()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      CADDY_EMAIL: ${CADDY_EMAIL:?set CADDY_EMAIL to a real address for Let's Encrypt}
+      PAIRVERSE_DOMAIN: ${PAIRVERSE_DOMAIN:-pairverse.fun}
+      PAIRVERSE_UPSTREAM: app:8765
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

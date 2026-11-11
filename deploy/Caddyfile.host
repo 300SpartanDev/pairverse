@@ -1,0 +1,32 @@
+# Host (systemd) variant: Caddy on the VPS, app bound to 127.0.0.1:8765 only.
+# Automatic Let's Encrypt HTTPS. Point the domain's A/AAAA records at the server first.
+# CADDY_EMAIL and PAIRVERSE_DOMAIN come from /etc/default/caddy (written by install-host.sh).
+# flush_interval -1 keeps the /api/v1/live SSE stream unbuffered.
+{
+	email {$CADDY_EMAIL}
+}
+
+{$PAIRVERSE_DOMAIN:pairverse.fun} {
+	encode gzip zstd
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+	reverse_proxy 127.0.0.1:8765 {
+		flush_interval -1
+		transport http {
+			read_timeout 0
+		}
+	}
+}
+
+www.{$PAIRVERSE_DOMAIN:pairverse.fun} {
+	redir https://{$PAIRVERSE_DOMAIN:pairverse.fun}{uri} permanent
+}
+
+# Optional: send visitors of the bare server IP to the domain (replace with your IP).
+# http://203.0.113.10 {
+# 	redir https://{$PAIRVERSE_DOMAIN:pairverse.fun}{uri} permanent
+# }

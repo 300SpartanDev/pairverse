@@ -1,0 +1,25 @@
+# Local build/smoke test only. Binds to 127.0.0.1:8765, no public ports, no TLS.
+# Used to verify the image starts; do not use this as production.
+#
+#   docker compose -f deploy/docker-compose.local.yml up --build
+
+name: pairverse-local
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: pairverse:local
+    environment:
+      PAIRS_DB: /data/pairs.db
+      PAIRS_CACHE: /data/cache
+    volumes:
+      - ../pairs.db:/data/pairs.db:ro
+      - pairverse_local_cache:/data/cache
+    ports:
+      - "127.0.0.1:8765:8765"
+    mem_limit: 1536m
+
+volumes:
+  pairverse_local_cache:

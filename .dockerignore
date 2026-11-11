@@ -1,0 +1,19 @@
+# Keep the image small and never ship the live SQLite DB
+.venv
+__pycache__
+**/__pycache__
+*.pyc
+logs/
+pairs.db
+pairs.db-wal
+pairs.db-shm
+cache/
+mockups/
+site-captures/
+bin/
+.git
+.env
+.env.*
+deploy/.env
+deploy/.env.*
+deploy/dist

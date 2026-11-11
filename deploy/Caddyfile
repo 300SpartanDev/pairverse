@@ -1,0 +1,27 @@
+# Automatic HTTPS for pairverse.fun via Let's Encrypt (Docker Compose).
+# Set CADDY_EMAIL and, if you ever change the hostname, PAIRVERSE_DOMAIN.
+# flush_interval -1 is required so the /api/v1/live SSE stream is not buffered.
+
+{
+	email {$CADDY_EMAIL}
+}
+
+{$PAIRVERSE_DOMAIN:pairverse.fun} {
+	encode gzip zstd
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+	reverse_proxy {$PAIRVERSE_UPSTREAM:app:8765} {
+		flush_interval -1
+		transport http {
+			read_timeout 0
+		}
+	}
+}
+
+www.{$PAIRVERSE_DOMAIN:pairverse.fun} {
+	redir https://{$PAIRVERSE_DOMAIN:pairverse.fun}{uri} permanent
+}
