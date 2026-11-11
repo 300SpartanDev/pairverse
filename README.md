@@ -51,7 +51,7 @@ The older `/api/stats`, `/api/search`, `/api/token/{mint}` and `/api/new` endpoi
 Python 3.11+.
 
 ```bash
-git clone https://github.com/LeonidasOfficial/pairverse.git
+git clone https://github.com/300SpartanDev/pairverse.git
 cd pairverse
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
