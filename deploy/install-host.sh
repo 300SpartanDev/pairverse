@@ -34,7 +34,7 @@ fi
 apt-get install -y caddy
 
 id -u pairverse >/dev/null 2>&1 || useradd --system --home "$APP_DIR" --shell /usr/sbin/nologin pairverse
-mkdir -p "$APP_DIR" "$DATA_DIR/cache" /var/log/pairverse
+mkdir -p "$APP_DIR" "$DATA_DIR/cache" "$DATA_DIR/img" /var/log/pairverse
 
 # Sync application code (never overwrite a live DB in $DATA_DIR)
 rsync -a --delete \
@@ -51,6 +51,7 @@ chown -R pairverse:pairverse "$APP_DIR" "$DATA_DIR"
 
 install -m 644 "$APP_DIR/deploy/systemd/pairverse-api.service" /etc/systemd/system/pairverse-api.service
 install -m 644 "$APP_DIR/deploy/systemd/pairverse-poller.service" /etc/systemd/system/pairverse-poller.service
+install -m 644 "$APP_DIR/deploy/systemd/pairverse-logos.service" /etc/systemd/system/pairverse-logos.service
 
 install -m 644 "$APP_DIR/deploy/Caddyfile.host" /etc/caddy/Caddyfile
 mkdir -p /etc/default
@@ -74,7 +75,7 @@ if command -v ufw >/dev/null 2>&1; then
 fi
 
 systemctl daemon-reload
-systemctl enable --now pairverse-api.service pairverse-poller.service
+systemctl enable --now pairverse-api.service pairverse-poller.service pairverse-logos.service
 systemctl enable --now caddy
 
 echo

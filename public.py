@@ -32,7 +32,9 @@ from typing import Any
 
 import requests
 from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
+
+import images
 
 BASE = Path(__file__).resolve().parent
 DB_PATH = Path(os.environ.get("PAIRS_DB", BASE / "pairs.db"))
@@ -42,6 +44,7 @@ GALAXY_BIN = CACHE_DIR / "galaxy.bin"
 REBUILD_S = 600
 ENRICH_MAX_AGE_S = 6 * 3600
 MINT_RE = re.compile(r"^[1-9A-HJ-NP-Za-km-z]{32,44}$")
+SOL_MINT = "So11111111111111111111111111111111111111112"
 QUOTES = {
     "So11111111111111111111111111111111111111112": "SOL",
     "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": "USDC",
@@ -615,20 +618,23 @@ def token(request: Request, mint: str, sort: str = "liq", limit: int = Query(500
     return payload
 
 
-def _new_rows(conn, after: int, limit: int) -> list[dict]:
-    cutoff = iso(now_utc() - timedelta(hours=3))
+def _new_rows(conn, after: int, limit: int, before: int = 0) -> list[dict]:
+    # after>0 / default: the last 3 hours, newest first. before>0: page back through older pools.
+    cutoff = iso(now_utc() - timedelta(hours=3)) if not before else "0"
+    where_id = "p.rowid<?" if before else "p.rowid>?"
     rows = conn.execute(
-        """SELECT p.rowid rid, p.address, p.dex, p.name, COALESCE(p.created_at,p.first_seen_at) created_at, p.first_seen_at,
+        f"""SELECT p.rowid rid, p.address, p.dex, p.name, COALESCE(p.created_at,p.first_seen_at) created_at, p.first_seen_at,
                   s.liquidity_usd liq, s.volume_h24 vol,
                   (SELECT MIN(mint) FROM pool_tokens WHERE pool_address=p.address AND role='base') base,
                   (SELECT MIN(mint) FROM pool_tokens WHERE pool_address=p.address AND role='quote') quote
            FROM pools p
            LEFT JOIN snapshots s ON s.id=(SELECT id FROM snapshots WHERE pool_address=p.address ORDER BY id DESC LIMIT 1)
-           WHERE p.rowid>? AND p.source IN ('geckoterminal_new_pools','jupiter_recent') AND COALESCE(p.dex,'unknown')<>'unknown'
+           WHERE {where_id} AND p.source IN ('geckoterminal_new_pools','jupiter_recent') AND COALESCE(p.dex,'unknown')<>'unknown'
              AND COALESCE(p.created_at,p.first_seen_at) >= ?
            ORDER BY p.rowid DESC LIMIT ?""",
-        (after, cutoff, limit),
+        (before or after, cutoff, limit),
     ).fetchall()
+    syms = _symbols(conn, {r["base"] for r in rows} | {r["quote"] for r in rows})
     out = []
     for r in rows:
         d = dict(r)
@@ -639,6 +645,9 @@ def _new_rows(conn, after: int, limit: int) -> list[dict]:
         d["ht"] = f32(h01(tokm or d["address"]))
         d["hp"] = f32(h01(d["address"], "p"))
         d["dexi"] = DEX_IDX.get(d["dex"] or "", 10)
+        d["base_sym"] = "SOL" if b == SOL_MINT else (syms.get(b or "", (None,))[0])
+        d["quote_sym"] = "SOL" if q == SOL_MINT else (syms.get(q or "", (None,))[0])
+        d["tok"] = tokm
         if d["liq"] is not None and d["liq"] > 5e9:
             d["liq"] = None
         out.append(d)
@@ -646,14 +655,42 @@ def _new_rows(conn, after: int, limit: int) -> list[dict]:
 
 
 @router.get("/new")
-def new(request: Request, after: int = 0, limit: int = Query(30, ge=1, le=200)):
+def new(request: Request, after: int = Query(0, ge=0), before: int = Query(0, ge=0), limit: int = Query(30, ge=1, le=200)):
+    """Newest pools. ?after=<cursor> for live catch-up, ?before=<rid> to page back through older pools."""
     guard(request)
     conn = ro()
     try:
-        rows = _new_rows(conn, after, limit)
+        rows = _new_rows(conn, after, limit, before=before)
     finally:
         conn.close()
-    return {"pools": rows, "cursor": max([r["rid"] for r in rows], default=after), "time": iso(now_utc())}
+    return {"pools": rows, "cursor": max([r["rid"] for r in rows], default=after),
+            "next_before": min([r["rid"] for r in rows], default=None) if len(rows) == limit else None,
+            "time": iso(now_utc())}
+
+
+IMG_LIMIT = Bucket(1500, 60)       # logo thumbnails per IP per minute (separate from the API budget)
+_NO_LOGO = {"Cache-Control": "public, max-age=1800"}
+
+
+@router.get("/img/{mint}")
+def token_logo(request: Request, mint: str, s: int = Query(64, ge=16, le=256)):
+    """Small webp logo for a token (resolved, fetched and cached server-side). 404 = no logo found."""
+    if not MINT_RE.match(mint):
+        return Response(status_code=404, headers=_NO_LOGO)
+    if not IMG_LIMIT.allow(client_ip(request)):
+        return Response(status_code=429, headers={"Retry-After": "30"})
+    size = next((x for x in images.SIZES if x >= s), images.SIZES[-1])
+    try:
+        p = images.thumb_for(mint, size)
+    except images.Busy:
+        return Response(status_code=503, headers={"Cache-Control": "no-store", "Retry-After": "3"})
+    except Exception as e:  # never let a bad remote image break the API
+        print(f"[logos] {mint[:8]} error {type(e).__name__}", flush=True)
+        return Response(status_code=503, headers={"Cache-Control": "no-store"})
+    if not p:
+        return Response(status_code=404, headers=_NO_LOGO)
+    return FileResponse(p, media_type="image/webp",
+                        headers={"Cache-Control": "public, max-age=604800, stale-while-revalidate=86400"})
 
 
 _stats_cache = TTL(20)

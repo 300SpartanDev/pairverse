@@ -1,0 +1,24 @@
+[Unit]
+Description=Pairverse token-logo backfill (Jupiter, DexScreener, on-chain metadata)
+After=network-online.target pairverse-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pairverse
+Group=pairverse
+WorkingDirectory=/opt/pairverse
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=/opt/pairverse
+Environment=PAIRS_DB=/var/lib/pairverse/pairs.db
+Environment=PAIRS_CACHE=/var/lib/pairverse/cache
+Environment=PAIRS_IMG_DIR=/var/lib/pairverse/img
+Environment=PAIRS_JUP_GAP=3.2
+ExecStart=/opt/pairverse/.venv/bin/python /opt/pairverse/images.py backfill
+Restart=always
+RestartSec=15
+Nice=10
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

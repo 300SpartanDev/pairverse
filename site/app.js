@@ -44,6 +44,22 @@ const DEXL = { 'orca': 'Orca', 'meteora': 'Meteora DLMM', 'meteora-damm-v2': 'Me
 const dexName = d => DEXL[d] || (d ? d.replace(/-/g, ' ') : '—');
 const dexCol = d => !d ? '#E9E4DA' : d.startsWith('raydium') ? '#8FD3FF' : d === 'orca' ? '#FFC562' : d.startsWith('meteora') ? '#FF7A52' : (d === 'pump-fun' || d === 'pumpswap') ? '#8CFFC1' : d === 'letsbonk-fun' ? '#FF9F40' : '#E9E4DA';
 const symOf = t => !t ? '?' : (t.mint === SOL ? 'SOL' : (t.sym || short(t.mint, 4, 3)));
+// token logos: server-side proxy (/api/v1/img) over a generated avatar, so a missing logo never shows a broken image
+const PAL = ['255,183,94', '143,211,255', '140,255,193', '255,122,82', '255,197,98', '233,228,218'];
+function hashOf(m) { let h = 2166136261; for (const c of m || '') { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; }
+function identStyle(m) { const h = hashOf(m), a = PAL[h % PAL.length], b = PAL[(h >>> 7) % PAL.length], g = (h >>> 14) % 360; return `background:radial-gradient(circle at 32% 28%,rgba(${a},.95),rgba(${b},.6) 52%,rgba(12,12,14,.95) 100%),conic-gradient(from ${g}deg,rgb(${a}),rgb(${b}),rgb(${a}))`; }
+function initials(sym, m) { const t = (sym || '').replace(/^\$/, '').replace(/[^\p{L}\p{N}]/gu, ''); return esc((t ? [...t].slice(0, 2).join('') : (m || '?').slice(0, 2)).toUpperCase()); }
+function logo(m, sym, size = 24, cls = '') {
+  const px = size <= 16 ? 32 : size <= 32 ? 64 : 128;
+  return `<span class="tl ${cls}" style="--s:${size}px;${identStyle(m || '?')}"><b>${initials(sym, m)}</b>${m ? `<img alt="" loading="lazy" decoding="async" src="/api/v1/img/${encodeURIComponent(m)}?s=${px}">` : ''}</span>`;
+}
+document.addEventListener('load', e => { const t = e.target; if (t.tagName === 'IMG' && t.parentNode?.classList?.contains('tl')) t.parentNode.classList.add('ok'); }, true);
+document.addEventListener('error', e => {
+  const t = e.target; if (t.tagName !== 'IMG' || !t.parentNode?.classList?.contains('tl')) return;
+  // one quiet retry (the server may still be fetching the logo), then keep the generated avatar
+  if (!t.dataset.r) { t.dataset.r = 1; const src = t.getAttribute('src'); t.removeAttribute('src'); setTimeout(() => { if (t.isConnected) t.src = src + '&r=1'; }, 3500); }
+  else t.remove();
+}, true);
 const api = async (u, opt) => { const r = await fetch(u, opt); if (!r.ok) throw new Error(r.status + ' ' + u); return r.json(); };
 
 // ---------------------------------------------------------------- clock (real time, or virtual for frame-exact capture)
@@ -83,7 +99,7 @@ async function loadGalaxy() {
   return new Float32Array(buf.buffer, 0, Math.floor(got / 24) * 6);
 }
 const statsP = api('/api/v1/stats').catch(() => null);
-const newP = api('/api/v1/new?limit=12').catch(() => ({ pools: [], cursor: 0 }));
+const newP = api('/api/v1/new?limit=100').catch(() => ({ pools: [], cursor: 0 }));
 let P;
 try { P = await loadGalaxy(); } catch (e) { P = new Float32Array(0); }
 S.stats = await statsP;
@@ -312,13 +328,14 @@ function buildBodies(pairs, t) {
 
 // ---------------------------------------------------------------- overlay: token panel, list, drawer
 const LABN = () => isMobile() ? 4 : 9;
-function renderLabels() { $('labs').innerHTML = bodies.slice(0, LABN()).map(b => `<div class="lab">${esc(b.o)} <b>· ${esc(dexName(b.p.dex))} · ${usd(b.p.liq)}</b></div>`).join(''); }
+function renderLabels() { $('labs').innerHTML = bodies.slice(0, LABN()).map(b => `<div class="lab">${logo(b.p.other?.mint, b.o, 16)} ${esc(b.o)} <b>· ${esc(dexName(b.p.dex))} · ${usd(b.p.liq)}</b></div>`).join(''); }
 function pairRow(p) {
-  return `<button type="button" class="row${p._new ? ' new' : ''}" data-m="${esc(p.other?.mint || '')}"><span class="p">${esc(symOf(S.tok?.token ? { mint: S.tokMint, sym: S.tok.token.symbol } : null))} <em>/ ${esc(symOf(p.other))}</em></span><span class="d" style="--c:${dexCol(p.dex)}"><i></i>${esc(dexName(p.dex))}</span><span class="v">${usd(p.liq)}</span></button>`;
+  return `<button type="button" class="row${p._new ? ' new' : ''}" data-m="${esc(p.other?.mint || '')}"><span class="p">${logo(p.other?.mint, symOf(p.other), 18)}${esc(symOf(S.tok?.token ? { mint: S.tokMint, sym: S.tok.token.symbol } : null))} <em>/ ${esc(symOf(p.other))}</em></span><span class="d" style="--c:${dexCol(p.dex)}"><i></i>${esc(dexName(p.dex))}</span><span class="v">${usd(p.liq)}</span></button>`;
 }
 function renderToken() {
   const d = S.tok; if (!d) return; const t = d.token;
   const sym = t.symbol || (t.mint === SOL ? 'SOL' : short(t.mint));
+  const tl = $('tLogo'); if (tl.dataset.m !== t.mint || (t.symbol && tl.dataset.s !== t.symbol)) { tl.innerHTML = logo(t.mint, sym, isMobile() ? 40 : 56); tl.dataset.m = t.mint; tl.dataset.s = t.symbol || ''; }
   const el = $('tSym'); el.textContent = sym; el.style.fontSize = '';
   const L = [...sym].length; if (L > 5) el.style.fontSize = `min(${Math.round(120 * 5.2 / L)}px, ${isMobile() ? 64 : 120}px)`;
   $('tName').textContent = t.name && t.name !== sym ? t.name : '';
@@ -359,7 +376,7 @@ function renderDrawer() {
   $('dRows').innerHTML = rows.map(p => {
     const a = isNew ? p.base : p.other, b = isNew ? p.quote : null;
     const label = isNew ? `${esc(symOf(p.base))} <em>/ ${esc(symOf(p.quote))}</em>` : `${esc(t?.symbol || '')} <em>/ ${esc(symOf(p.other))}</em>`;
-    return `<tr class="${p._new ? 'new' : ''}"><td class="pr"><button type="button" data-m="${esc(a?.mint || '')}">${label}</button></td>
+    return `<tr class="${p._new ? 'new' : ''}"><td class="pr"><button type="button" data-m="${esc(a?.mint || '')}">${logo(a?.mint, symOf(a), 20)}${label}</button></td>
      <td><span class="dx" style="--c:${dexCol(p.dex)}"><i></i>${esc(dexName(p.dex))}</span></td><td>${esc(symOf(p.quote))}</td>
      <td class="n">${usd(p.liq)}</td><td class="n">${usd(p.vol)}</td><td class="n">${ageOf(p.created_at)}</td>
      <td class="n"><a href="https://dexscreener.com/solana/${esc(p.pool)}" target="_blank" rel="noopener noreferrer"><span class="lg">DexScreener</span><span class="sm">DS</span> ↗</a><a href="https://solscan.io/account/${esc(p.pool)}" target="_blank" rel="noopener noreferrer"><span class="lg">Solscan</span><span class="sm">Scan</span> ↗</a></td></tr>`;
@@ -377,7 +394,7 @@ async function openDrawer(kind) {
   renderDrawer();
 }
 function closeDrawer() { S.drawer = null; $('drawer').classList.remove('open'); }
-const newToPair = r => ({ pool: r.address, dex: r.dex, base: { mint: r.base, sym: (r.name || '').split('/')[0]?.trim() }, quote: { mint: r.quote, sym: (r.name || '').split('/')[1]?.trim() }, liq: r.liq, vol: r.vol, created_at: r.created_at });
+const newToPair = r => ({ pool: r.address, dex: r.dex, base: { mint: r.base, sym: r.base_sym || (r.name || '').split('/')[0]?.trim() }, quote: { mint: r.quote, sym: r.quote_sym || (r.name || '').split('/')[1]?.trim() }, liq: r.liq, vol: r.vol, created_at: r.created_at });
 document.querySelectorAll('#drawer th[data-k]').forEach(th => th.addEventListener('click', async () => {
   const k = th.dataset.k; S.sort = { k, asc: S.sort.k === k ? !S.sort.asc : (k === 'pair' || k === 'dex' || k === 'quote') };
   if (S.drawer === 'token' && S.tok?.truncated && ['liq', 'vol', 'age'].includes(k)) {
@@ -390,7 +407,8 @@ $('dClose').onclick = closeDrawer; $('more').onclick = () => openDrawer('token')
 $('navN').onclick = e => { e.preventDefault(); openDrawer('new'); };
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-m]'); if (!b || b.id === 'tMint') return; const m = b.dataset.m;
-  if (m && m.length >= 32 && (b.closest('#rows') || b.closest('#dRows') || b.closest('#feed'))) { e.preventDefault(); closeDrawer(); focusToken(m); }
+  if (m && m.length >= 32 && (b.closest('#feed') || b.closest('#arr'))) { e.preventDefault(); focusAndOpen(m); }
+  else if (m && m.length >= 32 && (b.closest('#rows') || b.closest('#dRows'))) { e.preventDefault(); closeDrawer(); focusToken(m); }
 });
 $('tMint').onclick = () => { navigator.clipboard?.writeText($('tMint').dataset.m).then(() => toast('Mint copied'), () => { }); };
 $('back').onclick = () => unfocus(true);
@@ -420,7 +438,13 @@ async function focusToken(mint, { push = true, hint = null } = {}) {
     renderToken(); if (S.drawer === 'token') { S.drawerPairs = S.pairs; renderDrawer(); }
     const st = d.enrich?.state; if (st === 'queued' || st === 'running') pollTimer = setTimeout(() => load(false), 5000);
   };
-  load(true);
+  return load(true);
+}
+// fly to a token and open its full pairs drawer (new-pairs list rows, new arrivals in the galaxy)
+async function focusAndOpen(mint) {
+  closeDrawer(); const p = focusToken(mint);
+  await Promise.all([p, new Promise(r => setTimeout(r, RM ? 200 : 1500))]);
+  if (S.tokMint === mint) openDrawer('token');
 }
 function unfocus(push) {
   if (!S.tokMint && focusVal(NOW) < .01) return;
@@ -433,10 +457,9 @@ addEventListener('popstate', () => { const m = new URLSearchParams(location.sear
 
 // ---------------------------------------------------------------- search + autocomplete
 const qEl = $('q'), sugg = $('sugg'); let sres = [], sOn = 0, sTimer = null, sSeq = 0;
-function avatar(m) { let h = 0; for (const c of m) h = (h * 31 + c.charCodeAt(0)) >>> 0; const a = h % 360, b = (a + 40) % 360; return `background:radial-gradient(circle at 35% 30%,hsl(${a} 90% 85%),hsl(${b} 70% 50%) 60%,hsl(${b} 60% 18%))`; }
 function renderSugg(q) {
   if (!sres.length) { sugg.innerHTML = q ? `<div class="hint">No token named “${esc(q)}” yet — paste its mint address to map it</div>` : ''; sugg.classList.toggle('show', !!q); return; }
-  sugg.innerHTML = sres.map((r, i) => `<div class="it${i === sOn ? ' on' : ''}" role="option" data-i="${i}"><i class="av" style="${avatar(r.mint)}"></i>
+  sugg.innerHTML = sres.map((r, i) => `<div class="it${i === sOn ? ' on' : ''}" role="option" data-i="${i}">${logo(r.mint, r.symbol, 28, 'av')}
    <div>${esc(r.symbol || short(r.mint))}${r.collision ? '<span class="tw">SAME TICKER</span>' : ''}<small>${esc(r.name || '')}${r.name ? ' · ' : ''}${esc(short(r.mint, 4, 4))}</small></div>
    <div class="rt">${r.unmapped ? 'not mapped yet<br><b>map it →</b>' : `<b>${usd(r.liq)}</b><br>${nf(r.pairs)} pool${r.pairs === 1 ? '' : 's'}`}</div></div>`).join('')
     + (sres.some(r => r.collision) ? `<div class="hint">Several tokens share this ticker — ranked by liquidity, check the mint</div>` : '');
@@ -463,24 +486,71 @@ addEventListener('keydown', e => {
 $('kbd').textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : '/';
 
 // ---------------------------------------------------------------- live new pairs (SSE, polling fallback)
-function feedLine(r) { return `<button type="button" data-m="${esc(r.tokMint || '')}"><i>●</i> <b>${esc(r.name || '?')}</b> · ${esc(dexName(r.dex))} · ${usd(r.liq)} · ${ageOf(r.created_at)}${ageOf(r.created_at) === 'just now' ? '' : ' ago'}</button>`; }
-function renderFeed() { $('feed').innerHTML = `<span class="hd">Newest pairs · live</span>` + S.feed.slice(0, isMobile() ? 1 : 3).map(feedLine).join(''); }
 const QUOTEM = new Set([SOL, 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', 'USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB']);
-function ingest(rows, flash) {
+// ---- new pairs list: ~100 rows on load, live prepends, "+N new" pill, load-more paging, expand/collapse
+const FEED_MAX = 600; const fList = $('fList'), fPill = $('fPill'), fMore = $('fMore'); let feedNew = 0, feedBefore = null, feedBusy = false;
+const nameSym = (r, i) => (r.name || '').split('/')[i]?.trim() || null;
+function rowTok(r) {
+  const flip = QUOTEM.has(r.base) && r.quote && !QUOTEM.has(r.quote);
+  const m = flip ? r.quote : r.base, qm = flip ? r.base : r.quote;
+  const s = (flip ? r.quote_sym : r.base_sym) || nameSym(r, flip ? 1 : 0) || short(m || '????', 4, 3);
+  const q = qm === SOL ? 'SOL' : ((flip ? r.base_sym : r.quote_sym) || nameSym(r, flip ? 0 : 1) || '?');
+  return { m, s, q };
+}
+function agoS(ms) { const s = Math.max(0, (Date.now() - ms) / 1000); return s < 60 ? `${Math.floor(s)}s ago` : s < 3600 ? `${Math.floor(s / 60)}m ago` : s < 86400 ? `${Math.floor(s / 3600)}h ago` : `${Math.floor(s / 86400)}d ago`; }
+function feedRow(r) {
+  const k = rowTok(r), ms = Date.parse(r.created_at) || Date.now();
+  const el = document.createElement('button'); el.type = 'button'; el.className = 'fr'; el.dataset.m = k.m || ''; el.title = `${k.s} / ${k.q} · ${dexName(r.dex)} — open all pairs`;
+  el.innerHTML = `${logo(k.m, k.s, 22)}<span class="fs"><b>${esc(k.s)}</b><em>/ ${esc(k.q)}</em></span><span class="fd" style="--c:${dexCol(r.dex)}"><i></i>${esc(dexName(r.dex))}</span><span class="fv">${r.liq != null ? usd(r.liq) : '—'}</span><span class="fa" data-t="${ms}">${agoS(ms)}</span>`;
+  return el;
+}
+function feedCount() { $('fN').textContent = fList.children.length ? `${nf(fList.children.length)}` : ''; }
+function feedPrepend(rows) { // rows: newest first
+  if (!rows.length) return;
+  const atTop = fList.scrollTop < 8, h0 = fList.scrollHeight, frag = document.createDocumentFragment();
+  rows.forEach(r => { const el = feedRow(r); if (atTop) el.classList.add('in'); frag.appendChild(el); });
+  fList.prepend(frag);
+  while (fList.children.length > FEED_MAX) fList.lastElementChild.remove();
+  if (!atTop) { fList.scrollTop += fList.scrollHeight - h0; feedNew += rows.length; fPill.textContent = `+${feedNew} new ↑`; fPill.classList.add('show'); }
+  feedCount();
+}
+function feedAppend(rows) { const frag = document.createDocumentFragment(); rows.forEach(r => frag.appendChild(feedRow(r))); fList.appendChild(frag); feedCount(); }
+async function feedLoadMore() {
+  if (feedBusy || !feedBefore) return; feedBusy = true; fMore.textContent = 'Loading…';
+  try { const d = await api(`/api/v1/new?before=${feedBefore}&limit=100`); const rows = d.pools.filter(r => !S.seen?.has(r.address)); rows.forEach(r => (S.seen ||= new Set()).add(r.address)); feedAppend(rows); feedBefore = d.next_before; }
+  catch (e) { }
+  feedBusy = false; fMore.textContent = feedBefore ? 'Load more' : 'That’s everything'; fMore.disabled = !feedBefore;
+}
+fMore.onclick = feedLoadMore;
+fList.addEventListener('scroll', () => {
+  if (fList.scrollTop < 8 && feedNew) { feedNew = 0; fPill.classList.remove('show'); }
+  if (fList.scrollTop + fList.clientHeight > fList.scrollHeight - 160 && fList.children.length < FEED_MAX) feedLoadMore();
+}, { passive: true });
+fPill.onclick = () => { fList.scrollTo({ top: 0, behavior: RM ? 'auto' : 'smooth' }); feedNew = 0; fPill.classList.remove('show'); };
+const setTall = on => { $('feed').classList.toggle('tall', on); document.body.classList.toggle('feedtall', on); $('fExp').textContent = on ? 'Collapse' : 'Expand'; $('fExp').setAttribute('aria-expanded', on); try { localStorage.setItem('pv.feedTall', on ? '1' : ''); } catch (e) { } };
+$('fExp').onclick = () => setTall(!$('feed').classList.contains('tall'));
+try { if (localStorage.getItem('pv.feedTall') && !isMobile()) setTall(true); } catch (e) { }
+setInterval(() => { if (document.hidden) return; const top = fList.scrollTop, bot = top + fList.clientHeight + 40; for (const el of fList.children) { if (el.offsetTop > bot) break; if (el.offsetTop + 40 < top) continue; const a = el.lastElementChild; a.textContent = agoS(+a.dataset.t); } }, 1000);
+function ingest(rows, flash) { // rows: oldest first
+  const fresh = [];
   for (const r of rows) {
     if (S.seen?.has(r.address)) continue; (S.seen ||= new Set()).add(r.address);
-    r.tokMint = QUOTEM.has(r.base) && r.quote && !QUOTEM.has(r.quote) ? r.quote : r.base;
-    S.feed.unshift(r); if (flash) S.novaQ.push(r);
+    r.tokMint = rowTok(r).m;
+    S.feed.unshift(r); fresh.push(r); if (flash) S.novaQ.push(r);
     // a pair of the focused token: add it to the list as NEW
     if (S.tokMint && (r.base === S.tokMint || r.quote === S.tokMint)) {
       const p = newToPair(r); p.other = r.base === S.tokMint ? p.quote : p.base; p._new = true; S.pairs.unshift(p); S.tok.token.pairs_total = (S.tok.token.pairs_total || 0) + 1; renderToken();
     }
   }
-  S.feed.length = Math.min(S.feed.length, 30); renderFeed();
+  S.feed.length = Math.min(S.feed.length, 60);
+  feedPrepend(fresh.reverse());
   S.cursor = Math.max(S.cursor, ...rows.map(r => r.rid || 0));
 }
 const nw = await newP;
 ingest([...nw.pools].reverse(), false);
+feedBefore = nw.next_before ?? (nw.pools.length ? Math.min(...nw.pools.map(r => r.rid)) : null);
+fMore.textContent = feedBefore ? 'Load more' : ''; fMore.disabled = !feedBefore;
+if (fList.children.length < 60 && feedBefore) feedLoadMore();
 S.novaQ.push(...S.feed.slice(0, 4).reverse()); // replay the latest births so the sky is never silent on arrival
 function startLive() {
   let es = null, fails = 0;
@@ -492,7 +562,6 @@ function startLive() {
 }
 startLive();
 setInterval(async () => { try { S.stats = await api('/api/v1/stats'); paintStats(); } catch (e) { } }, 60000);
-setInterval(renderFeed, 30000);
 
 // supernova: place a newborn pool where its token lives in the galaxy (or on screen while focused)
 function spawnNova(r, t) {
@@ -500,7 +569,29 @@ function spawnNova(r, t) {
   if (liveN < CAPN && renderer) { i = liveN++; layout(Math.log10(Math.max(150, r.liq || 150)), r.dexi ?? 10, r.ht ?? Math.random(), r.hp ?? Math.random(), G, i); G.b[i] = t;
     const ga = galaxy.geometry.attributes; for (const k of ['position', 'aF', 'aC', 'aS', 'aR', 'aT', 'aB']) { ga[k].addUpdateRange?.(i * ga[k].itemSize, ga[k].itemSize); ga[k].needsUpdate = true; } galaxy.geometry.setDrawRange(0, liveN); }
   S.nova = { r, t0: t, i, fixed: null };
+  addArrival(r, S.nova, t);
   sound.ping();
+}
+// new arrivals stay clickable for a minute: pulsing ring + hover label (logo · symbol), click = fly + open drawer
+const ARR_S = 60; S.arr = [];
+function addArrival(r, nv, t) {
+  const k = rowTok(r); if (!k.m) return;
+  const el = document.createElement('button'); el.type = 'button'; el.className = 'arr'; el.dataset.m = k.m; el.setAttribute('aria-label', `New pair ${k.s} / ${k.q}: open all pairs`);
+  el.innerHTML = `<span class="al">${logo(k.m, k.s, 18)}<b>${esc(k.s)}</b><em>/ ${esc(k.q)} · ${esc(dexName(r.dex))}</em></span>`;
+  $('arr').appendChild(el); S.arr.push({ el, nv, t0: t });
+  while (S.arr.length > 14) S.arr.shift().el.remove();
+}
+function placeArrivals(t) {
+  const fv = focusVal(t);
+  for (let j = S.arr.length - 1; j >= 0; j--) {
+    const a = S.arr[j], age = t - a.t0;
+    if (age > ARR_S) { a.el.remove(); S.arr.splice(j, 1); continue; }
+    let vis = false, x = 0, y = 0;
+    if (a.nv.i >= 0 && fv < .5) { let z; [x, y, z] = toScreen(novaWorld(a.nv, t)); vis = z < 1 && x > 8 && y > 70 && x < innerWidth - 8 && y < innerHeight - 70; }
+    a.el.style.transform = `translate(${x}px,${y}px)`;
+    a.el.style.opacity = vis ? Math.min(1, age * 1.5) * (1 - seg(age, ARR_S - 8, ARR_S)) : 0;
+    a.el.style.pointerEvents = vis ? 'auto' : 'none';
+  }
 }
 function novaWorld(n, t) {
   if (focusVal(t) > .5 || n.i < 0) { if (!n.fixed) { const sx = isMobile() ? .5 : .14 + Math.random() * .1, sy = isMobile() ? .62 : .64 + Math.random() * .1; n.fixed = V(sx * 2 - 1, -(sy * 2 - 1), .5).unproject(camera).sub(camera.position).normalize().multiplyScalar(80).add(camera.position); } return n.fixed; }
@@ -631,6 +722,7 @@ onFrame((t, dt) => {
     novaMesh.position.copy(p); novaMesh.material.uniforms.uK.value = k <= 1 ? k : -1; novaMesh.material.uniforms.uS.value = Fr > .5 ? 12 : 14;
     U.uNova.value.set(p.x, p.y, p.z, k <= 1 ? k : -10);
     const [x, y, z] = toScreen(p); const r = n.r;
+    if (n.lg !== 1) { n.lg = 1; const k = rowTok(r); $('novaLogo').innerHTML = logo(k.m, k.s, 26); }
     $('novaName').textContent = r.name || '?';
     $('novaMeta').textContent = `${dexName(r.dex)} · ${r.liq != null ? usd(r.liq) + ' liq · ' : ''}born ${new Date(r.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} · ${ageOf(r.created_at)}${ageOf(r.created_at) === 'just now' ? '' : ' ago'}`;
     const edge = tmpV.copy(p).addScaledVector(tmpV2.setFromMatrixColumn(camera.matrixWorld, 0), novaMesh.material.uniforms.uS.value * .45); const [ex] = toScreen(edge); const rad = Math.abs(ex - x);
@@ -638,6 +730,7 @@ onFrame((t, dt) => {
     nv.style.transform = `translate(${nx}px,${ny}px)`; op(nv, z < 1 ? Math.min(seg(t, n.t0 + .15, n.t0 + .45), 1 - seg(t, n.t0 + 2.4, n.t0 + 2.9)) : 0);
     if (t > n.t0 + 3) { S.nova = null; novaMesh.material.uniforms.uK.value = -1; U.uNova.value.w = -10; op(nv, 0); }
   }
+  placeArrivals(t);
   // body labels
   const lA = S.tokMint ? seg(t, S.bodiesT0 + 1.3, S.bodiesT0 + 2.1) : 1 - bOut;
   const labEls = $('labs').children;
@@ -647,6 +740,6 @@ onFrame((t, dt) => {
 });
 
 // ---------------------------------------------------------------- run
-window.__app = { focusToken, unfocus, openDrawer, closeDrawer, S, type: async (q) => { qEl.focus(); qEl.value = q; qEl.dispatchEvent(new Event('input')); await doSearch(q); return sres; }, pick, flash: () => { const r = S.feed[0]; if (r) { S.nova = null; spawnNova(r, NOW); } }, tier, N };
+window.__app = { focusAndOpen, feedLoadMore, focusToken, unfocus, openDrawer, closeDrawer, S, type: async (q) => { qEl.focus(); qEl.value = q; qEl.dispatchEvent(new Event('input')); await doSearch(q); return sres; }, pick, flash: () => { const r = S.feed[0]; if (r) { S.nova = null; spawnNova(r, NOW); } }, tier, N };
 if (CAP) { window.__step = t => step(t); window.__ready = true; }
 else { const t0 = performance.now(); const loop = now => { step((now - t0) / 1000); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }

@@ -34,7 +34,8 @@ Base URL: `https://pairverse.fun`. GET only, about 240 requests per minute per I
 | `GET /api/v1/stats` | Totals: pools, tokens, new pools in the last hour, last poll time |
 | `GET /api/v1/search?q=bonk` | Tokens by ticker, name or mint, ranked by liquidity, with pair counts and collision flags |
 | `GET /api/v1/token/{mint}?sort=liq\|vol\|age\|oldest&limit=500` | A token, its total pair count, and its pairs (pool, DEX, counter-token, liquidity, 24h volume, created) plus live price |
-| `GET /api/v1/new?after=<cursor>&limit=30` | Newest pools (last 3 hours) |
+| `GET /api/v1/new?after=<cursor>&limit=30` | Newest pools (last 3 hours) with base/quote symbols; `?before=<rid>&limit=100` pages back through older pools (`next_before` cursor) |
+| `GET /api/v1/img/{mint}?s=32\|64\|128` | Token logo as a cached WebP thumbnail (404 = no logo, the site draws an identicon) |
 | `GET /api/v1/live` | **SSE** stream: `hello` with a cursor, then `pools` events as new pools are stored |
 | `GET /api/v1/galaxy.bin?n=200000` | Float32 buffer used by the galaxy (6 floats per pool) |
 | `GET /health` | Liveness |
@@ -115,8 +116,14 @@ See [`.env.example`](.env.example). Everything is optional:
 | `PAIRS_DB` | SQLite database path (default `./pairs.db`) |
 | `PAIRS_CACHE` | Cache dir for the galaxy buffer and search index (default `./cache`) |
 | `HELIUS_API_KEY` | Enables the Helius integration above |
+| `PAIRS_IMG_DIR`, `PAIRS_IMG_CAP_MB` | Token-logo thumbnail cache location and size cap (default `<cache parent>/img`, 4096 MB) |
+| `SOLANA_RPC_URL` | RPC for on-chain token metadata (logos); defaults to the public mainnet RPC |
 | `PAIRS_TUNNEL` | `1` starts an optional Cloudflare quick tunnel with `./start.sh` |
 | `CADDY_EMAIL`, `PAIRVERSE_DOMAIN` | Used by the self-host installers |
+
+## Token logos
+
+Logos are resolved from Jupiter's token list, DexScreener and on-chain metadata (Token-2022 metadata extension or the Metaplex metadata account, then the `image` in its JSON). Images are fetched server-side only: http(s) to public IPs only (SSRF guard), re-checked redirects, timeouts, a 6 MB cap, and image content only (no SVG). IPFS links are rewritten to working gateways. Thumbnails are stored as 32/64/128 px WebP with a disk size cap and served from `/api/v1/img/{mint}` with long cache headers. `images.py backfill` (the `pairverse-logos` service) fills the cache in the background, newest and most liquid tokens first; anything not cached yet is resolved on its first request. `images.py stats` shows coverage.
 
 ## Project layout
 
@@ -126,6 +133,7 @@ public.py        hardened public API, galaxy/search cache builder, SSE hub
 poller.py        24/7 new-pool ingest (GeckoTerminal + Jupiter)
 enrich.py        on-demand per-token enrichment (DexScreener, GeckoTerminal, Raydium, Helius)
 helius.py        optional Helius DAS / RPC helpers
+images.py        token logos: Jupiter / DexScreener / on-chain metadata resolver, safe fetch + WebP thumbnail cache, backfill job
 seed.py          one-shot Raydium + Orca seed
 db.py            schema and upserts (SQLite WAL)
 http_util.py     HTTP session, retries, shared GeckoTerminal rate limiter

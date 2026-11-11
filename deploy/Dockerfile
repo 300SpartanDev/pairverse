@@ -20,7 +20,7 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Application code only — the SQLite DB and cache live on a volume at /data
-COPY api.py public.py db.py poller.py enrich.py seed.py http_util.py helius.py cli.py /app/
+COPY api.py public.py db.py poller.py enrich.py seed.py http_util.py helius.py images.py cli.py /app/
 COPY site/ /app/site/
 COPY static/ /app/static/
 COPY deploy/entrypoint.sh /app/entrypoint.sh

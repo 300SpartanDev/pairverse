@@ -12,6 +12,7 @@ Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONPATH=/opt/pairverse
 Environment=PAIRS_DB=/var/lib/pairverse/pairs.db
 Environment=PAIRS_CACHE=/var/lib/pairverse/cache
+Environment=PAIRS_IMG_DIR=/var/lib/pairverse/img
 ExecStart=/opt/pairverse/.venv/bin/python -m uvicorn api:app --host 127.0.0.1 --port 8765 --app-dir /opt/pairverse --proxy-headers --forwarded-allow-ips=127.0.0.1
 Restart=always
 RestartSec=3

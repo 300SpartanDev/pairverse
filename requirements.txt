@@ -3,3 +3,4 @@ fastapi==0.162.4
 uvicorn[standard]==0.54.0
 requests==2.34.2
 python-dotenv==1.2.4
+Pillow==11.3.0

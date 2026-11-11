@@ -26,6 +26,7 @@
 
   <section class="tok" id="tok" aria-live="polite">
     <button class="back" id="back" type="button" data-mag>← Universe</button>
+    <div class="tlogo" id="tLogo"></div>
     <h1 class="sym" id="tSym"></h1>
     <div class="nm" id="tName"></div>
     <div class="px" id="tPx"></div>
@@ -37,8 +38,13 @@
   <button type="button" class="pill" id="pill" data-mag></button>
 
   <div id="labs"></div>
-  <div class="nova" id="nova"><span class="tag">NEW PAIR</span><div id="novaName"></div><small id="novaMeta"></small></div>
-  <div class="feed" id="feed" aria-live="polite"></div>
+  <div id="arr"></div>
+  <div class="nova" id="nova"><span class="tag">NEW PAIR</span><div class="nvrow"><span id="novaLogo"></span><div id="novaName"></div></div><small id="novaMeta"></small></div>
+  <section class="feed" id="feed" aria-label="Newest pairs, live">
+    <div class="fh"><span class="hd"><i></i>Newest pairs · live <span id="fN"></span></span><button type="button" id="fExp" aria-expanded="false" data-mag>Expand</button></div>
+    <div class="fwrap"><div class="flist" id="fList" role="list"></div><button type="button" class="fpill" id="fPill">+0 new ↑</button></div>
+    <button type="button" class="fmore" id="fMore" data-mag>Load more</button>
+  </section>
 
   <form class="search" id="search" role="search" autocomplete="off">
     <div class="sugg" id="sugg" role="listbox"></div>
