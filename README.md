@@ -9,6 +9,11 @@
   <a href="https://pairverse.fun"><img src="media/screenshot-token.jpg" alt="Pairverse Liquidity Universe: Bonk focused, with its deepest pairs listed" width="860"></a>
 </p>
 
+<p align="center">
+  ⭐ If you like Pairverse, please leave a star — it really helps the project grow!<br>
+  <a href="https://github.com/300SpartanDev/pairverse/stargazers"><img src="https://img.shields.io/github/stars/300SpartanDev/pairverse?style=social" alt="GitHub stars"></a>
+</p>
+
 ---
 
 Pairverse is a Solana pairing database with a face. It keeps track of every token it has seen, every pool that token trades in (SOL, USDC and token-to-token pairs, across Raydium, Orca, Meteora, pump.fun and the rest), and adds new pools as they're created, around the clock.
@@ -146,3 +151,7 @@ tools/           offline render of the soundscape
 ## License
 
 [MIT](LICENSE)
+
+<p align="center">
+  Enjoying Pairverse? Drop a ⭐ on the <a href="https://github.com/300SpartanDev/pairverse">repo</a>!
+</p>
