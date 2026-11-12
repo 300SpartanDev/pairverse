@@ -1,10 +1,30 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="en"><head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Pairs — the Solana liquidity universe</title>
+<title>PAIRVERSE — The live galaxy of Solana liquidity</title>
 <meta name="description" content="Every Solana trading pair as one sky. Search any token and see every pool it trades in, live.">
 <meta name="theme-color" content="#030304">
+<link rel="canonical" href="https://pairverse.fun/">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://pairverse.fun/">
+<meta property="og:title" content="PAIRVERSE — The live galaxy of Solana liquidity">
+<meta property="og:description" content="Every Solana trading pair as one sky. Search any token and see every pool it trades in, live.">
+<meta property="og:image" content="https://pairverse.fun/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="PAIRVERSE — The live galaxy of Solana liquidity">
+<meta property="og:site_name" content="PAIRVERSE">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="PAIRVERSE — The live galaxy of Solana liquidity">
+<meta name="twitter:description" content="Every Solana trading pair as one sky. Search any token and see every pool it trades in, live.">
+<meta name="twitter:image" content="https://pairverse.fun/og-image.png">
+<meta name="twitter:image:alt" content="PAIRVERSE — The live galaxy of Solana liquidity">
+<meta name="twitter:creator" content="@Leonidas_17GOI">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..700&family=Geist+Mono:wght@300..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/site.css">
@@ -29,9 +49,16 @@
     <div class="tlogo" id="tLogo"></div>
     <h1 class="sym" id="tSym"></h1>
     <div class="nm" id="tName"></div>
+    <div class="mint">
+      <button type="button" class="ca" id="tMint" title="Copy contract address" aria-label="Copy contract address" data-mag>
+        <span class="ca-lab">CA</span>
+        <span class="ca-addr" id="tMintAddr"></span>
+        <svg class="ca-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5h10"/></svg>
+      </button>
+      <span id="tFirst"></span>
+    </div>
     <div class="px" id="tPx"></div>
     <div class="meta"><small>Pools</small><small>Liquidity</small><small>Vol 24h</small><b id="m1">—</b><b id="m2">—</b><b id="m3">—</b></div>
-    <div class="mint"><button type="button" id="tMint" title="Copy mint" data-mag></button><span id="tFirst"></span></div>
     <div class="enr" id="tEnr"></div>
   </section>
   <aside class="list" id="list"><h4><span id="lTitle">Deepest pairs</span><span id="lSub"></span></h4><div id="rows"></div><button type="button" class="more" id="more" data-mag></button></aside>

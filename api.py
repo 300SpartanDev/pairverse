@@ -208,7 +208,7 @@ HTML = """<!DOCTYPE html>
 <header>
   <div>
     <h1>Solana pairing database</h1>
-    <div class="sub">Free pipeline — GeckoTerminal + DexScreener + Raydium + Orca seed</div>
+    <div class="sub">Free pipeline on this box — GeckoTerminal + DexScreener + Raydium + Orca seed</div>
   </div>
   <nav>
     <a href="/" class="secondary">Universe</a>
@@ -413,9 +413,29 @@ def favicon() -> FileResponse:
     return FileResponse(SITE / "favicon.svg", media_type="image/svg+xml")
 
 
-@app.get("/", include_in_schema=False)
+@app.api_route("/robots.txt", methods=["GET", "HEAD"], include_in_schema=False)
+def robots() -> PlainTextResponse:
+    p = SITE / "robots.txt"
+    body = p.read_text() if p.exists() else "User-agent: *\nAllow: /\n"
+    return PlainTextResponse(body, headers={"Cache-Control": "public, max-age=3600"})
+
+
+@app.api_route("/og-image.png", methods=["GET", "HEAD"], include_in_schema=False)
+def og_image_png() -> FileResponse:
+    return FileResponse(SITE / "og-image.png", media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.api_route("/og-image.jpg", methods=["GET", "HEAD"], include_in_schema=False)
+def og_image_jpg() -> FileResponse:
+    return FileResponse(SITE / "og-image.jpg", media_type="image/jpeg",
+                        headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
 def site_index() -> FileResponse:
-    return FileResponse(SITE / "index.html", headers={"Cache-Control": "no-cache"})
+    return FileResponse(SITE / "index.html", media_type="text/html; charset=utf-8",
+                        headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 
 app.mount("/", StaticFiles(directory=SITE), name="site")

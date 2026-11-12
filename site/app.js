@@ -344,8 +344,8 @@ function renderToken() {
   else if (d.loadingPrice) px = '';
   $('tPx').innerHTML = px;
   $('m1').textContent = nf(t.pairs_total); $('m2').textContent = usd(t.liq_total); $('m3').textContent = usd(t.vol_total);
-  $('tMint').textContent = short(t.mint, 6, 6); $('tMint').dataset.m = t.mint;
-  $('tFirst').textContent = t.first_pool ? `· first pool ${new Date(t.first_pool).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}` : '';
+  $('tMintAddr').textContent = short(t.mint, 6, 6); $('tMint').dataset.m = t.mint;
+  $('tFirst').textContent = t.first_pool ? `first pool ${new Date(t.first_pool).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}` : '';
   const st = d.enrich?.state; const E = $('tEnr');
   E.innerHTML = st === 'queued' || st === 'running' ? `<i></i>${t.pairs_total ? 'Refreshing' : 'Mapping'} pairs from DexScreener · GeckoTerminal · Raydium — first lookups take ~1–2 min`
     : st === 'limited' || st === 'busy' ? 'Showing stored pairs (refresh queue busy)'
@@ -410,7 +410,7 @@ document.addEventListener('click', e => {
   if (m && m.length >= 32 && (b.closest('#feed') || b.closest('#arr'))) { e.preventDefault(); focusAndOpen(m); }
   else if (m && m.length >= 32 && (b.closest('#rows') || b.closest('#dRows'))) { e.preventDefault(); closeDrawer(); focusToken(m); }
 });
-$('tMint').onclick = () => { navigator.clipboard?.writeText($('tMint').dataset.m).then(() => toast('Mint copied'), () => { }); };
+$('tMint').onclick = () => { navigator.clipboard?.writeText($('tMint').dataset.m).then(() => toast('CA copied'), () => { }); };
 $('back').onclick = () => unfocus(true);
 $('home').onclick = e => { e.preventDefault(); closeDrawer(); unfocus(true); };
 $('navU').onclick = e => { e.preventDefault(); closeDrawer(); unfocus(true); };

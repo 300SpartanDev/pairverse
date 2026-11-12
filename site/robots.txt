@@ -1,0 +1,6 @@
+# Pairverse — allow all crawlers, including X/Twitter card bots.
+User-agent: *
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
