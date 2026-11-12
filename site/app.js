@@ -677,7 +677,7 @@ function govern(dt, t) {
 // ---------------------------------------------------------------- frame
 const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), fPos = new THREE.Vector3(), fLook = new THREE.Vector3();
 const blocked = (x, y, w) => {
-  if (y > innerHeight - (isMobile() ? 150 : 110) || y < (isMobile() ? 110 : 120)) return true;
+  if (y > innerHeight - (isMobile() ? 150 : 110) || y < (isMobile() ? 110 : 70)) return true;
   if (isMobile()) return y < 330;
   return x + (w || 200) > innerWidth - 420 || (x < 470 && y < 470);
 };
@@ -691,7 +691,7 @@ onFrame((t, dt) => {
   op($('kicker'), RM ? 0 : Math.min(seg(t, 1.6, 2.2), 1 - seg(t, 2.8, 3.2)));
   const it = RM ? 99 : t; // reduced motion: show chrome immediately
   op($('top'), seg(it, 3.0, 3.8));
-  const pcaA = seg(it, 3.0, 3.8) * (1 - seg(Fr, 0, .25)); op($('pca'), pcaA); $('pca').classList.toggle('on', pcaA > .6);
+  const pcaA = 1 - seg(Fr, 0, .25); op($('pca'), pcaA); $('pca').classList.toggle('on', pcaA > .6);
   const ovA = ease.out(seg(it, 3.6, 4.4)) * (1 - seg(Fr, 0, .3)); op($('ov'), ovA); $('ov').style.transform = `translateY(${(1 - ease.out(seg(it, 3.6, 4.4))) * 20}px)`;
   if (S.stats) $('ovn').textContent = nf((S.stats.pools || 0) * ease.out(seg(it, 3.6, 5.2)));
   op($('legend'), seg(it, 4.0, 4.8) * (1 - seg(Fr, 0, .3)));
