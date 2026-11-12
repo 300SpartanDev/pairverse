@@ -5,6 +5,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { createSpace } from './space-audio.js';
+import { PROJECT_CA } from './config.js';
 
 // ---------------------------------------------------------------- env
 const QS = new URLSearchParams(location.search);
@@ -40,6 +41,25 @@ function ageOf(iso) {
   const d = s / 86400; return d < 365 ? Math.round(d) + 'd' : (d / 365).toFixed(1) + 'y';
 }
 const short = (m, a = 4, b = 4) => m ? m.slice(0, a) + '…' + m.slice(-b) : '';
+// Site-wide project CA badge. Edit PROJECT_CA in config.js when the coin launches.
+const PROJECT_CA_OK = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+function renderProjectCA() {
+  const el = $('pca'); if (!el) return;
+  const ca = String(PROJECT_CA || '').trim();
+  const ready = PROJECT_CA_OK.test(ca);
+  if (!ready) {
+    el.innerHTML = '<span class="pca-pill"><span class="pca-lab">CA:</span><span class="pca-val" id="pcaVal">coming soon</span></span>';
+    return;
+  }
+  el.innerHTML = `<button type="button" class="pca-pill" id="pcaCopy" title="Copy contract address" aria-label="Copy contract address" data-mag>
+      <span class="pca-lab">CA:</span><span class="pca-val" id="pcaVal">${esc(short(ca, 6, 6))}</span>
+      <svg class="pca-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5h10"/></svg>
+    </button>
+    <a class="pca-sol" href="https://solscan.io/token/${encodeURIComponent(ca)}" target="_blank" rel="noopener noreferrer" title="View on Solscan" data-mag>Solscan</a>`;
+  $('pcaCopy').onclick = () => { navigator.clipboard?.writeText(ca).then(() => toast('CA copied'), () => { }); };
+}
+renderProjectCA();
+
 const DEXL = { 'orca': 'Orca', 'meteora': 'Meteora DLMM', 'meteora-damm-v2': 'Meteora DAMM', 'meteora-dbc': 'Meteora DBC', 'raydium-concentrated': 'Raydium CLMM', 'raydium-clmm': 'Raydium CLMM', 'raydium-standard': 'Raydium AMM', 'raydium': 'Raydium', 'raydium-launchlab': 'LaunchLab', 'pump-fun': 'Pump.fun', 'pumpswap': 'PumpSwap', 'letsbonk-fun': 'LetsBonk', 'zerofi': 'ZeroFi', 'fluxbeam': 'FluxBeam', 'saros-amm': 'Saros', 'dexlab': 'Dexlab', 'stonkfun': 'Stonk.fun', 'bags-fm': 'Bags', 'moonshot': 'Moonshot', 'manifest': 'Manifest' };
 const dexName = d => DEXL[d] || (d ? d.replace(/-/g, ' ') : '—');
 const dexCol = d => !d ? '#E9E4DA' : d.startsWith('raydium') ? '#8FD3FF' : d === 'orca' ? '#FFC562' : d.startsWith('meteora') ? '#FF7A52' : (d === 'pump-fun' || d === 'pumpswap') ? '#8CFFC1' : d === 'letsbonk-fun' ? '#FF9F40' : '#E9E4DA';
@@ -657,7 +677,7 @@ function govern(dt, t) {
 // ---------------------------------------------------------------- frame
 const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), fPos = new THREE.Vector3(), fLook = new THREE.Vector3();
 const blocked = (x, y, w) => {
-  if (y > innerHeight - (isMobile() ? 150 : 110) || y < 60) return true;
+  if (y > innerHeight - (isMobile() ? 150 : 110) || y < (isMobile() ? 110 : 120)) return true;
   if (isMobile()) return y < 330;
   return x + (w || 200) > innerWidth - 420 || (x < 470 && y < 470);
 };
@@ -671,6 +691,7 @@ onFrame((t, dt) => {
   op($('kicker'), RM ? 0 : Math.min(seg(t, 1.6, 2.2), 1 - seg(t, 2.8, 3.2)));
   const it = RM ? 99 : t; // reduced motion: show chrome immediately
   op($('top'), seg(it, 3.0, 3.8));
+  const pcaA = seg(it, 3.0, 3.8) * (1 - seg(Fr, 0, .25)); op($('pca'), pcaA); $('pca').classList.toggle('on', pcaA > .6);
   const ovA = ease.out(seg(it, 3.6, 4.4)) * (1 - seg(Fr, 0, .3)); op($('ov'), ovA); $('ov').style.transform = `translateY(${(1 - ease.out(seg(it, 3.6, 4.4))) * 20}px)`;
   if (S.stats) $('ovn').textContent = nf((S.stats.pools || 0) * ease.out(seg(it, 3.6, 5.2)));
   op($('legend'), seg(it, 4.0, 4.8) * (1 - seg(Fr, 0, .3)));

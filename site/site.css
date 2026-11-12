@@ -24,6 +24,17 @@ body.nogl canvas#gl{display:none} body.nogl canvas#fallback{display:block}
 .snd.on span i:nth-child(2){animation-delay:-.3s}.snd.on span i:nth-child(3){animation-delay:-.6s}.snd.on span i:nth-child(4){animation-delay:-.15s}
 @keyframes eq{from{height:2px}to{height:10px}}
 /* intro type */
+.pca{position:absolute;left:50%;top:72px;transform:translateX(-50%);z-index:4;display:flex;align-items:center;gap:8px;opacity:0;white-space:nowrap;pointer-events:none}
+.pca.on{pointer-events:auto}
+.pca-pill,.pca-sol{display:inline-flex;align-items:center;gap:8px;padding:8px 16px 8px 14px;border-radius:999px;font-family:var(--mono);font-size:16px;line-height:1;letter-spacing:.04em;color:var(--w);
+  background:rgba(12,12,13,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:inset 0 0 0 1px rgba(255,183,94,.75),0 0 18px rgba(255,183,94,.4)}
+button.pca-pill:hover,button.pca-pill:focus-visible,.pca-sol:hover,.pca-sol:focus-visible{color:#fff;background:rgba(18,16,12,.88);
+  box-shadow:inset 0 0 0 1px rgba(255,183,94,.95),0 0 26px rgba(255,183,94,.55)}
+.pca-lab{font-size:12px;font-weight:500;letter-spacing:.16em;color:var(--amber)}
+.pca-val{letter-spacing:.05em;font-variant-numeric:tabular-nums}
+.pca-ico{flex:none;opacity:.85}
+.pca-sol{font-size:13px;letter-spacing:.1em;color:var(--amber);padding:8px 13px;text-decoration:none}
 .title{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font-weight:200;font-size:clamp(52px,9.2vw,132px);line-height:.92;letter-spacing:-.045em}
 .title .ln{display:block;overflow:hidden;padding:.04em 0 .16em;margin-bottom:-.12em}
 .title .ch{display:inline-block;will-change:transform;opacity:0}
@@ -143,6 +154,10 @@ body.focus .ov,body.focus .legend{visibility:hidden}
 @media (max-width:760px){
   :root{--pad:18px}
   .top{top:16px;gap:14px} .top nav{display:none} .hide-m{display:none} .top .r{gap:14px}
+  .pca{top:56px}
+  .pca-pill{font-size:14px;padding:7px 14px 7px 12px}
+  .pca-lab{font-size:11px}
+  .pca-sol{font-size:12px;padding:7px 11px}
   .ov{bottom:150px} .ov .big{font-size:46px} .ov p{font-size:9.5px;letter-spacing:.1em}
   .legend{display:none}
   .kicker{font-size:9px;letter-spacing:.16em;top:calc(50% + 72px)}
