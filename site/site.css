@@ -24,6 +24,9 @@ body.nogl canvas#gl{display:none} body.nogl canvas#fallback{display:block}
 .snd.on{color:var(--w)} .snd.on span i{background:var(--amber);animation:eq 1s ease-in-out infinite alternate}
 .snd.on span i:nth-child(2){animation-delay:-.3s}.snd.on span i:nth-child(3){animation-delay:-.6s}.snd.on span i:nth-child(4){animation-delay:-.15s}
 @keyframes eq{from{height:2px}to{height:10px}}
+.gh{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;flex:none;color:var(--mut);border-radius:50%;transition:color .2s,box-shadow .2s,background .2s}
+.gh svg{width:22px;height:22px;display:block}
+.gh:hover,.gh:focus-visible{color:var(--w);background:rgba(255,183,94,.1);box-shadow:0 0 16px rgba(255,183,94,.5)}
 /* intro type */
 .pca{display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;pointer-events:none}
 .pca.on{pointer-events:auto}
@@ -155,7 +158,9 @@ body.focus .ov,body.focus .legend{visibility:hidden}
 @media (max-width:760px){
   :root{--pad:18px}
   .top{top:16px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 12px}
-  .top .l{gap:14px} .top nav{display:none} .hide-m{display:none} .top .r{gap:14px;justify-self:auto;margin-left:auto}
+  .top .l{gap:14px} .top nav{display:none} .hide-m{display:none} .top .r{gap:10px;justify-self:auto;margin-left:auto}
+  .gh{width:40px;height:40px;margin:-8px -6px}
+  .gh svg{width:22px;height:22px}
   .pca{flex:1 0 100%;order:3;justify-content:center}
   .pca-pill{font-size:12px;padding:5px 11px}
   .pca-lab{font-size:10px}
